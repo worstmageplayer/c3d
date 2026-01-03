@@ -1,3 +1,4 @@
+#include "hyprland.h"
 #include "../raylib-5.5_linux_amd64/include/raylib.h"
 #include "types.h"
 #include "projection.h"
@@ -6,6 +7,16 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define WINDOW_TITLE "3D stuff"
+#define WIDTH 1920
+#define HEIGHT 1080
 
 struct Point3 GetCenter(const struct Point3 *points, size_t count) {
     struct Point3 center = { 0, 0, 0 };
@@ -27,11 +38,20 @@ struct Point3 GetCenter(const struct Point3 *points, size_t count) {
 }
 
 int main(void) {
-    int WIDTH = 1920;
-    int HEIGHT = 1080;
-
-    InitWindow(WIDTH, HEIGHT, "3D stuff");
+    InitWindow(WIDTH, HEIGHT, WINDOW_TITLE);
     SetTargetFPS(165);
+
+    int sock = ConnectHyprlandSocket();
+    printf("Sock: %d\n", sock);
+    SendCommand(sock, "j/clients");
+    char *buffer = GetReply(sock);
+    // printf("JSON Buffer:\n%s\n", buffer);
+    char *address = GetAddressByTitle(buffer, WINDOW_TITLE);
+    printf("Window Address: %s\n", address);
+    int *pos = GetPosByAddress(buffer, address);
+    int initX = pos[0];
+    int initY = pos[1];
+    printf("Initial Position: %d, %d\n", pos[0], pos[1]);
 
     struct Point3 sphere[SPHERE_VERTEX_COUNT];
     for (int i = 0; i < SPHERE_VERTEX_COUNT; i++) {
@@ -83,40 +103,64 @@ int main(void) {
     int sphereArrayLength = (int)(sizeof(sphere) / sizeof(sphere[0]));
 
     for (int i = 0; i < cubeArrayLength; i++) {
-        struct Direction direction = { -1.5, 0, 2 };
-        cube[i] = Translate3(cube[i], direction);
         cube[i] = Scale3(cube[i], 5);
+        struct Direction direction = { -15, 0, 20 };
+        cube[i] = Translate3(cube[i], direction);
     }
 
     for (int i = 0; i < pyramidArrayLength; i++) {
-        struct Direction direction = { 2, 0, 2 };
-        pyramid[i] = Translate3(pyramid[i], direction);
         pyramid[i] = Scale3(pyramid[i], 2);
+        struct Direction direction = { 20, 0, 20 };
+        pyramid[i] = Translate3(pyramid[i], direction);
     }
 
     for (int i = 0; i < sphereArrayLength; i++) {
-        struct Direction direction = { 0, 1, 3 };
-        sphere[i] = Translate3(sphere[i], direction);
         sphere[i] = Scale3(sphere[i], 6);
+        struct Direction direction = { 0, 10, 30 };
+        sphere[i] = Translate3(sphere[i], direction);
     }
 
-    struct Point3 cubeCenter = GetCenter(cube, cubeArrayLength);
-    struct Point3 pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
-    struct Point3 sphereCenter = GetCenter(sphere, sphereArrayLength);
+    int prevX = initX;
+    int prevY = initY;
 
-    while (!WindowShouldClose())
-    {
+    while (!WindowShouldClose()) {
+
+        struct Point3 cubeCenter = GetCenter(cube, cubeArrayLength);
+        struct Point3 pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
+        struct Point3 sphereCenter = GetCenter(sphere, sphereArrayLength);
+
+        // printf("Sock Loop: %d\n", sock);
+        sock = ConnectHyprlandSocket();
+        SendCommand(sock, "j/clients");
+        buffer = GetReply(sock);
+        address = GetAddressByTitle(buffer, WINDOW_TITLE);
+        pos = GetPosByAddress(buffer, address);
+        int dx = prevX - pos[0];
+        int dy = prevY - pos[1];
+        // printf("Changed Position: %d, %d\n", pos[0], pos[1]);
+        // printf("Change in Position: %d, %d\n", dx, dy);
+        prevX = pos[0];
+        prevY = pos[1];
+        close(sock);
+
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
+        // Fix this
+        int CONST = 8;
+        struct Direction windowDirection = { (float)dx/CONST, -(float)dy/CONST, 0 };
+
         for (int i = 0; i < cubeArrayLength; i++) {
+            cube[i] = Translate3(cube[i], windowDirection);
             cube[i] = RotateAboutPoint(cube[i], cubeCenter, 0.01f, 0.015, 0.0f);
         }
 
         for (int i = 0; i < pyramidArrayLength; i++) {
+            pyramid[i] = Translate3(pyramid[i], windowDirection);
             pyramid[i] = RotateAboutPoint(pyramid[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
         }
         for (int i = 0; i < sphereArrayLength; i++) {
+            sphere[i] = Translate3(sphere[i], windowDirection);
             sphere[i] = RotateAboutPoint(sphere[i], sphereCenter, 0.005f, 0.005f, 0.005f);
         }
 
@@ -183,6 +227,8 @@ int main(void) {
         EndDrawing();
     }
 
+    free(pos);
+    free(buffer);
     CloseWindow();
     return 0;
 }
