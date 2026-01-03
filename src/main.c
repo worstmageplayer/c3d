@@ -102,6 +102,10 @@ int main(void) {
     int pyramidArrayLength = (int)(sizeof(pyramid) / sizeof(pyramid[0]));
     int sphereArrayLength = (int)(sizeof(sphere) / sizeof(sphere[0]));
 
+    struct Point3 cubeCenter = GetCenter(cube, cubeArrayLength);
+    struct Point3 pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
+    struct Point3 sphereCenter = GetCenter(sphere, sphereArrayLength);
+
     for (int i = 0; i < cubeArrayLength; i++) {
         cube[i] = Scale3(cube[i], 5);
         struct Direction direction = { -15, 0, 20 };
@@ -122,12 +126,25 @@ int main(void) {
 
     int prevX = initX;
     int prevY = initY;
+    int dx = 0;
+    int dy = 0;
+
+    struct Direction windowDirection = { 0, 0, 0 };
+
+    struct Point2 cube2d[cubeArrayLength];
+    struct Point2 cubeScreen[cubeArrayLength];
+
+    struct Point2 pyramid2d[pyramidArrayLength];
+    struct Point2 pyramidScreen[pyramidArrayLength];
+
+    struct Point2 sphere2d[sphereArrayLength];
+    struct Point2 sphereScreen[sphereArrayLength];
 
     while (!WindowShouldClose()) {
 
-        struct Point3 cubeCenter = GetCenter(cube, cubeArrayLength);
-        struct Point3 pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
-        struct Point3 sphereCenter = GetCenter(sphere, sphereArrayLength);
+        cubeCenter = GetCenter(cube, cubeArrayLength);
+        pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
+        sphereCenter = GetCenter(sphere, sphereArrayLength);
 
         // printf("Sock Loop: %d\n", sock);
         sock = ConnectHyprlandSocket();
@@ -135,20 +152,23 @@ int main(void) {
         buffer = GetReply(sock);
         address = GetAddressByTitle(buffer, WINDOW_TITLE);
         pos = GetPosByAddress(buffer, address);
-        int dx = prevX - pos[0];
-        int dy = prevY - pos[1];
+        dx = prevX - pos[0];
+        dy = prevY - pos[1];
         // printf("Changed Position: %d, %d\n", pos[0], pos[1]);
         // printf("Change in Position: %d, %d\n", dx, dy);
         prevX = pos[0];
         prevY = pos[1];
         close(sock);
+        free(buffer);
+        free(pos);
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
         // Fix this
         int CONST = 8;
-        struct Direction windowDirection = { (float)dx/CONST, -(float)dy/CONST, 0 };
+        windowDirection.x = (float)dx/CONST;
+        windowDirection.y = -(float)dy/CONST;
 
         for (int i = 0; i < cubeArrayLength; i++) {
             cube[i] = Translate3(cube[i], windowDirection);
@@ -164,24 +184,15 @@ int main(void) {
             sphere[i] = RotateAboutPoint(sphere[i], sphereCenter, 0.005f, 0.005f, 0.005f);
         }
 
-        struct Point2 cube2d[cubeArrayLength];
-        struct Point2 cubeScreen[cubeArrayLength];
-
         for (int i = 0; i < cubeArrayLength; i++) {
             cube2d[i] = Project(cube[i]);
             cubeScreen[i] = CartesianToScreen(cube2d[i], WIDTH, HEIGHT);
         }
 
-        struct Point2 pyramid2d[pyramidArrayLength];
-        struct Point2 pyramidScreen[pyramidArrayLength];
-
         for (int i = 0; i < pyramidArrayLength; i++) {
             pyramid2d[i] = Project(pyramid[i]);
             pyramidScreen[i] = CartesianToScreen(pyramid2d[i], WIDTH, HEIGHT);
         }
-
-        struct Point2 sphere2d[sphereArrayLength];
-        struct Point2 sphereScreen[sphereArrayLength];
 
         for (int i = 0; i < sphereArrayLength; i++) {
             sphere2d[i] = Project(sphere[i]);
