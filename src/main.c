@@ -42,7 +42,7 @@ int main(void) {
     SetTargetFPS(165);
 
     int sock = ConnectHyprlandSocket();
-    printf("Sock: %d\n", sock);
+    // printf("Sock: %d\n", sock);
     SendCommand(sock, "j/clients");
     char *buffer = GetReply(sock);
     // printf("JSON Buffer:\n%s\n", buffer);
@@ -150,7 +150,6 @@ int main(void) {
         sock = ConnectHyprlandSocket();
         SendCommand(sock, "j/clients");
         buffer = GetReply(sock);
-        address = GetAddressByTitle(buffer, WINDOW_TITLE);
         pos = GetPosByAddress(buffer, address);
         dx = prevX - pos[0];
         dy = prevY - pos[1];
