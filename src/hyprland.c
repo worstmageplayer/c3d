@@ -6,10 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <signal.h>
 #include "cJSON.h"
 #include "hyprland.h"
-#include "error.h"
 
 int ConnectHyprlandSocket(void) {
     const char *runtime = getenv("XDG_RUNTIME_DIR");
