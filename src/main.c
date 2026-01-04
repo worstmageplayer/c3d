@@ -1,6 +1,7 @@
 #include "hyprland.h"
 #include "../raylib-5.5_linux_amd64/include/raylib.h"
 #include "types.h"
+#include "draw.h"
 #include "projection.h"
 #include "transform.h"
 #include "data/sphere_data.h"
@@ -74,6 +75,7 @@ int main(void) {
         return 1;
     }
     free(buffer);
+    close(sock);
 
     struct Point3 sphere[SPHERE_VERTEX_COUNT];
     for (int i = 0; i < SPHERE_VERTEX_COUNT; i++) {
@@ -124,25 +126,29 @@ int main(void) {
     int pyramidArrayLength = (int)(sizeof(pyramid) / sizeof(pyramid[0]));
     int sphereArrayLength = (int)(sizeof(sphere) / sizeof(sphere[0]));
 
+    int cubeEdgesArrayLength = (int)(sizeof(cubeEdges) / sizeof(cubeEdges[0]));
+    int pyramidEdgesArrayLength = (int)(sizeof(pyramidEdges) / sizeof(pyramidEdges[0]));
+    int sphereEdgesArrayLength = (int)(sizeof(sphereEdges) / sizeof(sphereEdges[0]));
+
     struct Point3 cubeCenter = GetCenter(cube, cubeArrayLength);
     struct Point3 pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
     struct Point3 sphereCenter = GetCenter(sphere, sphereArrayLength);
 
     for (int i = 0; i < cubeArrayLength; i++) {
         cube[i] = Scale3(cube[i], 5);
-        struct Direction direction = { -15, 0, 20 };
+        struct Direction direction = { -15, 0, 30 };
         cube[i] = Translate3(cube[i], direction);
     }
 
     for (int i = 0; i < pyramidArrayLength; i++) {
         pyramid[i] = Scale3(pyramid[i], 2);
-        struct Direction direction = { 20, 0, 20 };
+        struct Direction direction = { 15, 0, 30 };
         pyramid[i] = Translate3(pyramid[i], direction);
     }
 
     for (int i = 0; i < sphereArrayLength; i++) {
-        sphere[i] = Scale3(sphere[i], 6);
-        struct Direction direction = { 0, 10, 30 };
+        sphere[i] = Scale3(sphere[i], 5);
+        struct Direction direction = { 0, 10, 45 };
         sphere[i] = Translate3(sphere[i], direction);
     }
 
@@ -202,9 +208,8 @@ int main(void) {
         ClearBackground(RAYWHITE);
 
         // Fix this
-        int CONST = 8;
-        windowDirection.x = (float)dx/CONST;
-        windowDirection.y = -(float)dy/CONST;
+        windowDirection.x = (float)dx / (Z/100);
+        windowDirection.y = -(float)dy / (Z/100);
 
         for (int i = 0; i < cubeArrayLength; i++) {
             cube[i] = Translate3(cube[i], windowDirection);
@@ -215,6 +220,7 @@ int main(void) {
             pyramid[i] = Translate3(pyramid[i], windowDirection);
             pyramid[i] = RotateAboutPoint(pyramid[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
         }
+
         for (int i = 0; i < sphereArrayLength; i++) {
             sphere[i] = Translate3(sphere[i], windowDirection);
             sphere[i] = RotateAboutPoint(sphere[i], sphereCenter, 0.005f, 0.005f, 0.005f);
@@ -235,41 +241,24 @@ int main(void) {
             sphereScreen[i] = CartesianToScreen(sphere2d[i], WIDTH, HEIGHT);
         }
 
-        for (int e = 0; e < (int)(sizeof(cubeEdges) / sizeof(cubeEdges[0])); e++) {
-            int a = cubeEdges[e][0];
-            int b = cubeEdges[e][1];
-            DrawLine(
-                (int)cubeScreen[a].x,
-                (int)cubeScreen[a].y,
-                (int)cubeScreen[b].x,
-                (int)cubeScreen[b].y,
+        DrawWireframe(
+                cubeEdges,
+                cubeEdgesArrayLength,
+                cubeScreen,
                 GREEN
-            );
-        }
-
-        for (int e = 0; e < (int)(sizeof(pyramidEdges) / sizeof(pyramidEdges[0])); e++) {
-            int a = pyramidEdges[e][0];
-            int b = pyramidEdges[e][1];
-            DrawLine(
-                (int)pyramidScreen[a].x,
-                (int)pyramidScreen[a].y,
-                (int)pyramidScreen[b].x,
-                (int)pyramidScreen[b].y,
+                );
+        DrawWireframe(
+                pyramidEdges,
+                pyramidEdgesArrayLength,
+                pyramidScreen,
                 RED
-            );
-        }
-
-        for (int e = 0; e < (int)(sizeof(sphereEdges) / sizeof(sphereEdges[0])); e++) {
-            int a = sphereEdges[e][0];
-            int b = sphereEdges[e][1];
-            DrawLine(
-                (int)sphereScreen[a].x,
-                (int)sphereScreen[a].y,
-                (int)sphereScreen[b].x,
-                (int)sphereScreen[b].y,
+                );
+        DrawWireframe(
+                sphereEdges,
+                sphereEdgesArrayLength,
+                sphereScreen,
                 BLUE
-            );
-        }
+                );
 
         EndDrawing();
     }
