@@ -42,16 +42,38 @@ int main(void) {
     SetTargetFPS(165);
 
     int sock = ConnectHyprlandSocket();
-    // printf("Sock: %d\n", sock);
-    SendCommand(sock, "j/clients");
+    if (sock < 0) {
+        fprintf(stderr, "Failed to connect to Hyprland socket\n");
+        return 1;
+    }
+
+    SendCommand(sock, "j/clients\0");
     char *buffer = GetReply(sock);
-    // printf("JSON Buffer:\n%s\n", buffer);
+    // printf("Buffer: %s\n", buffer);
+    if (!buffer) {
+        fprintf(stderr, "No reply\n");
+        close(sock);
+        return 1;
+    }
+
     char *address = GetAddressByTitle(buffer, WINDOW_TITLE);
-    printf("Window Address: %s\n", address);
+    if (!address) {
+        fprintf(stderr, "Could not find window with title: %s\n", WINDOW_TITLE);
+        return 1;
+    }
+
     int *pos = GetPosByAddress(buffer, address);
-    int initX = pos[0];
-    int initY = pos[1];
-    printf("Initial Position: %d, %d\n", pos[0], pos[1]);
+    int initX = 0;
+    int initY = 0;
+    if (pos) {
+        initX = pos[0];
+        initY = pos[1];
+        free(pos);
+    } else {
+        fprintf(stderr, "Unable to get pos\n");
+        return 1;
+    }
+    free(buffer);
 
     struct Point3 sphere[SPHERE_VERTEX_COUNT];
     for (int i = 0; i < SPHERE_VERTEX_COUNT; i++) {
@@ -146,20 +168,35 @@ int main(void) {
         pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
         sphereCenter = GetCenter(sphere, sphereArrayLength);
 
-        // printf("Sock Loop: %d\n", sock);
         sock = ConnectHyprlandSocket();
-        SendCommand(sock, "j/clients");
+        if (sock < 0) {
+            fprintf(stderr, "Failed to connect to Hyprland socket\n");
+            return 1;
+        };
+
+        SendCommand(sock, "j/clients\0");
         buffer = GetReply(sock);
+        if (!buffer) {
+            fprintf(stderr, "No reply\n");
+            close(sock);
+            return 1;
+        }
+
         pos = GetPosByAddress(buffer, address);
-        dx = prevX - pos[0];
-        dy = prevY - pos[1];
-        // printf("Changed Position: %d, %d\n", pos[0], pos[1]);
-        // printf("Change in Position: %d, %d\n", dx, dy);
-        prevX = pos[0];
-        prevY = pos[1];
-        close(sock);
+        if (pos) {
+            dx = prevX - pos[0];
+            dy = prevY - pos[1];
+            prevX = pos[0];
+            prevY = pos[1];
+            free(pos);
+        } else {
+            fprintf(stderr, "Unable to get pos\n");
+            free(buffer);
+            close(sock);
+            return 1;
+        }
         free(buffer);
-        free(pos);
+        close(sock);
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -237,8 +274,8 @@ int main(void) {
         EndDrawing();
     }
 
-    free(pos);
-    free(buffer);
+    free(address);
+    close(sock);
     CloseWindow();
     return 0;
 }

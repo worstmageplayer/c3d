@@ -1,11 +1,15 @@
+#include <stddef.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <signal.h>
 #include "cJSON.h"
 #include "hyprland.h"
+#include "error.h"
 
 int ConnectHyprlandSocket(void) {
     const char *runtime = getenv("XDG_RUNTIME_DIR");
@@ -45,17 +49,45 @@ int ConnectHyprlandSocket(void) {
 }
 
 void SendCommand(int sock, const char *cmd) {
-    write(sock, cmd, strlen(cmd));
+    if (sock < 0 || !cmd) return;
+
+    size_t len = strlen(cmd);
+    size_t written = 0;
+    size_t n;
+
+    while (written < len) {
+        n = write(sock, cmd + written, len - written);
+        if (n == -1) {
+            if (errno == EINTR) continue;
+            perror("write");
+            return;
+        }
+        written += (size_t)n;
+    }
 }
 
 char *GetReply(int sock) {
-    size_t cap = 8192;
-    char *buffer = malloc(cap + 1);
+    if (sock < 0) return NULL;
 
-    ssize_t n = read(sock, buffer, cap);
-    if (n > 0) {
-        buffer[n] = '\0';
+    size_t bufferSize = 8192;
+    char *buffer = malloc(bufferSize);
+    size_t n;
+    size_t total = 0;
+
+    while (total < bufferSize - 1) {
+        n = read(sock, buffer + total, bufferSize - total);
+        if (n > 0) {
+            total += n;
+        } else if (n == 0) {
+            break;
+        } else {
+            perror("read");
+            free(buffer);
+            break;
+        }
+        if (buffer[total - 1] == '\0') break;
     }
+    buffer[total] = '\0';
 
     return buffer;
 }
