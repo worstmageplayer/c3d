@@ -1,6 +1,6 @@
 #include "projection.h"
 
-float Z = 600.0f;
+float Z = 1000.0f;
 
 struct Point2 Project(struct Point3 point3) {
     struct Point2 returnVal;
