@@ -5,6 +5,7 @@
 #include "projection.h"
 #include "transform.h"
 #include "data/sphere_data.h"
+#include "object.h"
 #include <stddef.h>
 #include <sys/types.h>
 #include <string.h>
@@ -19,21 +20,21 @@
 #define WIDTH 1920
 #define HEIGHT 1080
 
-struct Point3 GetCenter(const struct Point3 *points, size_t count) {
+struct Point3 GetCenter(struct Object object) {
     struct Point3 center = { 0, 0, 0 };
 
-    if (!points || count == 0)  return center;
+    if (!object.vertices || object.vertexCount == 0)  return center;
 
     double x = 0, y = 0, z = 0;
-    for (size_t i = 0; i < count; i++) {
-        x += points[i].x;
-        y += points[i].y;
-        z += points[i].z;
+    for (size_t i = 0; i < object.vertexCount; i++) {
+        x += object.vertices[i].x;
+        y += object.vertices[i].y;
+        z += object.vertices[i].z;
     }
 
-    center.x = x / count;
-    center.y = y / count;
-    center.z = z / count;
+    center.x = x / object.vertexCount;
+    center.y = y / object.vertexCount;
+    center.z = z / object.vertexCount;
 
     return center;
 }
@@ -130,26 +131,47 @@ int main(void) {
     int pyramidEdgesArrayLength = (int)(sizeof(pyramidEdges) / sizeof(pyramidEdges[0]));
     int sphereEdgesArrayLength = (int)(sizeof(sphereEdges) / sizeof(sphereEdges[0]));
 
-    struct Point3 cubeCenter = GetCenter(cube, cubeArrayLength);
-    struct Point3 pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
-    struct Point3 sphereCenter = GetCenter(sphere, sphereArrayLength);
+    struct Object Pyramid = {
+        pyramid,
+        pyramidArrayLength,
+        pyramidEdges,
+        pyramidEdgesArrayLength,
+    };
 
-    for (int i = 0; i < cubeArrayLength; i++) {
-        cube[i] = Scale3(cube[i], 5);
+    struct Object Cube = {
+        cube,
+        cubeArrayLength,
+        cubeEdges,
+        cubeEdgesArrayLength
+    };
+
+    struct Object Sphere = {
+        sphere,
+        sphereArrayLength,
+        sphereEdges,
+        sphereEdgesArrayLength
+    };
+
+    struct Point3 cubeCenter = GetCenter(Cube);
+    struct Point3 pyramidCenter = GetCenter(Pyramid);
+    struct Point3 sphereCenter = GetCenter(Sphere);
+
+    for (size_t i = 0; i < Cube.vertexCount; i++) {
+        Cube.vertices[i] = Scale3(Cube.vertices[i], 5);
         struct Direction direction = { -15, 0, 30 };
-        cube[i] = Translate3(cube[i], direction);
+        Cube.vertices[i] = Translate3(Cube.vertices[i], direction);
     }
 
-    for (int i = 0; i < pyramidArrayLength; i++) {
-        pyramid[i] = Scale3(pyramid[i], 2);
+    for (size_t i = 0; i < Pyramid.vertexCount; i++) {
+        Pyramid.vertices[i] = Scale3(Pyramid.vertices[i], 2);
         struct Direction direction = { 15, 0, 30 };
-        pyramid[i] = Translate3(pyramid[i], direction);
+        Pyramid.vertices[i] = Translate3(Pyramid.vertices[i], direction);
     }
 
-    for (int i = 0; i < sphereArrayLength; i++) {
-        sphere[i] = Scale3(sphere[i], 5);
+    for (size_t i = 0; i < Sphere.vertexCount; i++) {
+        Sphere.vertices[i] = Scale3(Sphere.vertices[i], 5);
         struct Direction direction = { 0, 10, 45 };
-        sphere[i] = Translate3(sphere[i], direction);
+        Sphere.vertices[i] = Translate3(Sphere.vertices[i], direction);
     }
 
     int prevX = initX;
@@ -170,9 +192,9 @@ int main(void) {
 
     while (!WindowShouldClose()) {
 
-        cubeCenter = GetCenter(cube, cubeArrayLength);
-        pyramidCenter = GetCenter(pyramid, pyramidArrayLength);
-        sphereCenter = GetCenter(sphere, sphereArrayLength);
+        cubeCenter = GetCenter(Cube);
+        pyramidCenter = GetCenter(Pyramid);
+        sphereCenter = GetCenter(Sphere);
 
         sock = ConnectHyprlandSocket();
         if (sock < 0) {
@@ -211,51 +233,48 @@ int main(void) {
         windowDirection.x = (float)dx / (Z/100);
         windowDirection.y = -(float)dy / (Z/100);
 
-        for (int i = 0; i < cubeArrayLength; i++) {
-            cube[i] = Translate3(cube[i], windowDirection);
-            cube[i] = RotateAboutPoint(cube[i], cubeCenter, 0.01f, 0.015, 0.0f);
+        for (size_t i = 0; i < Cube.vertexCount; i++) {
+            Cube.vertices[i] = Translate3(Cube.vertices[i], windowDirection);
+            Cube.vertices[i] = RotateAboutPoint(Cube.vertices[i], cubeCenter, 0.01f, 0.015, 0.0f);
         }
 
-        for (int i = 0; i < pyramidArrayLength; i++) {
-            pyramid[i] = Translate3(pyramid[i], windowDirection);
-            pyramid[i] = RotateAboutPoint(pyramid[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
+        for (size_t i = 0; i < Pyramid.vertexCount; i++) {
+            Pyramid.vertices[i] = Translate3(Pyramid.vertices[i], windowDirection);
+            Pyramid.vertices[i] = RotateAboutPoint(Pyramid.vertices[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
         }
 
-        for (int i = 0; i < sphereArrayLength; i++) {
-            sphere[i] = Translate3(sphere[i], windowDirection);
-            sphere[i] = RotateAboutPoint(sphere[i], sphereCenter, 0.005f, 0.005f, 0.005f);
+        for (size_t i = 0; i < Sphere.vertexCount; i++) {
+            Sphere.vertices[i] = Translate3(Sphere.vertices[i], windowDirection);
+            Sphere.vertices[i] = RotateAboutPoint(Sphere.vertices[i], sphereCenter, 0.001f, 0.02f, 0.005f);
         }
 
-        for (int i = 0; i < cubeArrayLength; i++) {
-            cube2d[i] = Project(cube[i]);
+        for (size_t i = 0; i < Cube.vertexCount; i++) {
+            cube2d[i] = Project(Cube.vertices[i]);
             cubeScreen[i] = CartesianToScreen(cube2d[i], WIDTH, HEIGHT);
         }
 
-        for (int i = 0; i < pyramidArrayLength; i++) {
-            pyramid2d[i] = Project(pyramid[i]);
+        for (size_t i = 0; i < Pyramid.vertexCount; i++) {
+            pyramid2d[i] = Project(Pyramid.vertices[i]);
             pyramidScreen[i] = CartesianToScreen(pyramid2d[i], WIDTH, HEIGHT);
         }
 
-        for (int i = 0; i < sphereArrayLength; i++) {
-            sphere2d[i] = Project(sphere[i]);
+        for (size_t i = 0; i < Sphere.vertexCount; i++) {
+            sphere2d[i] = Project(Sphere.vertices[i]);
             sphereScreen[i] = CartesianToScreen(sphere2d[i], WIDTH, HEIGHT);
         }
 
         DrawWireframe(
-                cubeEdges,
-                cubeEdgesArrayLength,
+                &Cube,
                 cubeScreen,
                 GREEN
                 );
         DrawWireframe(
-                pyramidEdges,
-                pyramidEdgesArrayLength,
+                &Pyramid,
                 pyramidScreen,
                 RED
                 );
         DrawWireframe(
-                sphereEdges,
-                sphereEdgesArrayLength,
+                &Sphere,
                 sphereScreen,
                 BLUE
                 );
