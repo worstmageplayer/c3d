@@ -81,7 +81,7 @@ char *GetReply(int sock) {
         } else {
             perror("read");
             free(buffer);
-            break;
+            return NULL;
         }
         if (buffer[total - 1] == '\0') break;
     }
