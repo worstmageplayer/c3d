@@ -31,7 +31,7 @@ struct Object3D spawnCuboid(int x, int y, int z) {
         {5,7}, {6,7}
     };
 
-    for (size_t i = 0; i < 5; i++) {
+    for (size_t i = 0; i < 8; i++) {
         vertices[i].x *= x;
         vertices[i].y *= y;
         vertices[i].z *= z;
