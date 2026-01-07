@@ -20,7 +20,7 @@
 #define WIDTH 1920
 #define HEIGHT 1080
 
-struct Point3 GetCenter(struct Object object) {
+struct Point3 GetCenter(struct Object3D object) {
     struct Point3 center = { 0, 0, 0 };
 
     if (!object.vertices || object.vertexCount == 0)  return center;
@@ -90,82 +90,33 @@ int main(void) {
         }
     }
 
-    struct Point3 pyramid[5] = {
-        { 1, -1,  1},
-        { 1, -1, -1},
-        {-1, -1, -1},
-        {-1, -1,  1},
-        { 0,  1,  0},
-    };
-
-    const int pyramidEdges[8][2] = {
-        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
-        { 0, 4 }, { 1, 4 }, { 2, 4 }, { 3, 4 },
-    };
-
-    struct Point3 cube[8] = {
-        { 1,  1,  1},
-        { 1,  1, -1},
-        { 1, -1,  1},
-        { 1, -1, -1},
-        {-1,  1,  1},
-        {-1,  1, -1},
-        {-1, -1,  1},
-        {-1, -1, -1},
-    };
-
-    const int cubeEdges[12][2] = {
-        {0,1}, {0,2},
-        {0,4}, {1,3},
-        {1,5}, {2,3},
-        {2,6}, {3,7},
-        {4,5}, {4,6},
-        {5,7}, {6,7}
-    };
-
-    int cubeArrayLength = (int)(sizeof(cube) / sizeof(cube[0]));
-    int pyramidArrayLength = (int)(sizeof(pyramid) / sizeof(pyramid[0]));
     int sphereArrayLength = (int)(sizeof(sphere) / sizeof(sphere[0]));
-
-    int cubeEdgesArrayLength = (int)(sizeof(cubeEdges) / sizeof(cubeEdges[0]));
-    int pyramidEdgesArrayLength = (int)(sizeof(pyramidEdges) / sizeof(pyramidEdges[0]));
     int sphereEdgesArrayLength = (int)(sizeof(sphereEdges) / sizeof(sphereEdges[0]));
 
-    struct Object Pyramid = {
-        pyramid,
-        pyramidArrayLength,
-        pyramidEdges,
-        pyramidEdgesArrayLength,
-    };
+    struct Object3D cube = spawnCuboid(1, 1, 1);
+    struct Object3D pyramid = spawnPyramid(1, 0.5, 1);
 
-    struct Object Cube = {
-        cube,
-        cubeArrayLength,
-        cubeEdges,
-        cubeEdgesArrayLength
-    };
-
-    struct Object Sphere = {
+    struct Object3D Sphere = {
         sphere,
         sphereArrayLength,
         sphereEdges,
         sphereEdgesArrayLength
     };
 
-    struct Point3 cubeCenter = GetCenter(Cube);
-    struct Point3 pyramidCenter = GetCenter(Pyramid);
+    struct Point3 cubeCenter = GetCenter(cube);
+    struct Point3 pyramidCenter = GetCenter(pyramid);
     struct Point3 sphereCenter = GetCenter(Sphere);
 
-    for (size_t i = 0; i < Cube.vertexCount; i++) {
-        Cube.vertices[i] = Scale3(Cube.vertices[i], 5);
+    for (size_t i = 0; i < cube.vertexCount; i++) {
+        cube.vertices[i] = Scale3(cube.vertices[i], 5);
         struct Direction direction = { -15, 0, 30 };
-        Cube.vertices[i] = Translate3(Cube.vertices[i], direction);
+        cube.vertices[i] = Translate3(cube.vertices[i], direction);
     }
 
-    for (size_t i = 0; i < Pyramid.vertexCount; i++) {
-        Pyramid.vertices[i] = Scale3(Pyramid.vertices[i], 2);
+    for (size_t i = 0; i < pyramid.vertexCount; i++) {
+        pyramid.vertices[i] = Scale3(pyramid.vertices[i], 2);
         struct Direction direction = { 15, 0, 30 };
-        Pyramid.vertices[i] = Translate3(Pyramid.vertices[i], direction);
+        pyramid.vertices[i] = Translate3(pyramid.vertices[i], direction);
     }
 
     for (size_t i = 0; i < Sphere.vertexCount; i++) {
@@ -181,19 +132,19 @@ int main(void) {
 
     struct Direction windowDirection = { 0, 0, 0 };
 
-    struct Point2 cube2d[cubeArrayLength];
-    struct Point2 cubeScreen[cubeArrayLength];
+    struct Point2 cube2d[cube.vertexCount];
+    struct Point2 cubeScreen[cube.vertexCount];
 
-    struct Point2 pyramid2d[pyramidArrayLength];
-    struct Point2 pyramidScreen[pyramidArrayLength];
+    struct Point2 pyramid2d[pyramid.vertexCount];
+    struct Point2 pyramidScreen[pyramid.vertexCount];
 
     struct Point2 sphere2d[sphereArrayLength];
     struct Point2 sphereScreen[sphereArrayLength];
 
     while (!WindowShouldClose()) {
 
-        cubeCenter = GetCenter(Cube);
-        pyramidCenter = GetCenter(Pyramid);
+        cubeCenter = GetCenter(cube);
+        pyramidCenter = GetCenter(pyramid);
         sphereCenter = GetCenter(Sphere);
 
         sock = ConnectHyprlandSocket();
@@ -233,14 +184,14 @@ int main(void) {
         windowDirection.x = (float)dx / (Z/100);
         windowDirection.y = -(float)dy / (Z/100);
 
-        for (size_t i = 0; i < Cube.vertexCount; i++) {
-            Cube.vertices[i] = Translate3(Cube.vertices[i], windowDirection);
-            Cube.vertices[i] = RotateAboutPoint(Cube.vertices[i], cubeCenter, 0.01f, 0.015, 0.0f);
+        for (size_t i = 0; i < cube.vertexCount; i++) {
+            cube.vertices[i] = Translate3(cube.vertices[i], windowDirection);
+            cube.vertices[i] = RotateAboutPoint(cube.vertices[i], cubeCenter, 0.01f, 0.015, 0.0f);
         }
 
-        for (size_t i = 0; i < Pyramid.vertexCount; i++) {
-            Pyramid.vertices[i] = Translate3(Pyramid.vertices[i], windowDirection);
-            Pyramid.vertices[i] = RotateAboutPoint(Pyramid.vertices[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
+        for (size_t i = 0; i < pyramid.vertexCount; i++) {
+            pyramid.vertices[i] = Translate3(pyramid.vertices[i], windowDirection);
+            pyramid.vertices[i] = RotateAboutPoint(pyramid.vertices[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
         }
 
         for (size_t i = 0; i < Sphere.vertexCount; i++) {
@@ -248,13 +199,13 @@ int main(void) {
             Sphere.vertices[i] = RotateAboutPoint(Sphere.vertices[i], sphereCenter, 0.001f, 0.02f, 0.005f);
         }
 
-        for (size_t i = 0; i < Cube.vertexCount; i++) {
-            cube2d[i] = Project(Cube.vertices[i]);
+        for (size_t i = 0; i < cube.vertexCount; i++) {
+            cube2d[i] = Project(cube.vertices[i]);
             cubeScreen[i] = CartesianToScreen(cube2d[i], WIDTH, HEIGHT);
         }
 
-        for (size_t i = 0; i < Pyramid.vertexCount; i++) {
-            pyramid2d[i] = Project(Pyramid.vertices[i]);
+        for (size_t i = 0; i < pyramid.vertexCount; i++) {
+            pyramid2d[i] = Project(pyramid.vertices[i]);
             pyramidScreen[i] = CartesianToScreen(pyramid2d[i], WIDTH, HEIGHT);
         }
 
@@ -264,12 +215,12 @@ int main(void) {
         }
 
         DrawWireframe(
-                &Cube,
+                &cube,
                 cubeScreen,
                 GREEN
                 );
         DrawWireframe(
-                &Pyramid,
+                &pyramid,
                 pyramidScreen,
                 RED
                 );
@@ -282,6 +233,8 @@ int main(void) {
         EndDrawing();
     }
 
+    freeObject3D(&cube);
+    freeObject3D(&pyramid);
     free(address);
     close(sock);
     CloseWindow();

@@ -2,7 +2,7 @@
 #include "types.h"
 #include "object.h"
 
-void DrawWireframe(struct Object *object, struct Point2 *ScreenPos, Color color) {
+void DrawWireframe(struct Object3D *object, struct Point2 *ScreenPos, Color color) {
     for (size_t e = 0; e < object->edgeCount; e++) {
         size_t a = object->edges[e][0];
         size_t b = object->edges[e][1];

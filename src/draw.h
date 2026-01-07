@@ -5,6 +5,6 @@
 #include "types.h"
 #include "object.h"
 
-void DrawWireframe(struct Object *object, struct Point2 *ScreenPos, Color color);
+void DrawWireframe(struct Object3D *object, struct Point2 *ScreenPos, Color color);
 
 #endif
