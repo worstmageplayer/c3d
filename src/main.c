@@ -4,7 +4,6 @@
 #include "draw.h"
 #include "projection.h"
 #include "transform.h"
-#include "data/sphere_data.h"
 #include "object.h"
 #include <stddef.h>
 #include <sys/types.h>
@@ -78,34 +77,13 @@ int main(void) {
     free(buffer);
     close(sock);
 
-    struct Point3 sphere[SPHERE_VERTEX_COUNT];
-    for (int i = 0; i < SPHERE_VERTEX_COUNT; i++) {
-        sphere[i] = sphere_data[i];
-    }
-
-    int sphereEdges[SPHERE_EDGE_COUNT][2];
-    for (int i = 0; i < SPHERE_EDGE_COUNT; i++) {
-        for (int j = 0; j < 2; j++) {
-            sphereEdges[i][j] = sphereEdges_data[i][j];
-        }
-    }
-
-    int sphereArrayLength = (int)(sizeof(sphere) / sizeof(sphere[0]));
-    int sphereEdgesArrayLength = (int)(sizeof(sphereEdges) / sizeof(sphereEdges[0]));
-
     struct Object3D cube = spawnCuboid(1, 1, 1);
     struct Object3D pyramid = spawnPyramid(1, 0.5, 1);
-
-    struct Object3D Sphere = {
-        sphere,
-        sphereArrayLength,
-        sphereEdges,
-        sphereEdgesArrayLength
-    };
+    struct Object3D sphere = spawnSphere(1, 0.9, 1);
 
     struct Point3 cubeCenter = GetCenter(cube);
     struct Point3 pyramidCenter = GetCenter(pyramid);
-    struct Point3 sphereCenter = GetCenter(Sphere);
+    struct Point3 sphereCenter = GetCenter(sphere);
 
     for (size_t i = 0; i < cube.vertexCount; i++) {
         cube.vertices[i] = Scale3(cube.vertices[i], 5);
@@ -119,10 +97,10 @@ int main(void) {
         pyramid.vertices[i] = Translate3(pyramid.vertices[i], direction);
     }
 
-    for (size_t i = 0; i < Sphere.vertexCount; i++) {
-        Sphere.vertices[i] = Scale3(Sphere.vertices[i], 5);
+    for (size_t i = 0; i < sphere.vertexCount; i++) {
+        sphere.vertices[i] = Scale3(sphere.vertices[i], 5);
         struct Direction direction = { 0, 10, 45 };
-        Sphere.vertices[i] = Translate3(Sphere.vertices[i], direction);
+        sphere.vertices[i] = Translate3(sphere.vertices[i], direction);
     }
 
     int prevX = initX;
@@ -138,14 +116,14 @@ int main(void) {
     struct Point2 pyramid2d[pyramid.vertexCount];
     struct Point2 pyramidScreen[pyramid.vertexCount];
 
-    struct Point2 sphere2d[sphereArrayLength];
-    struct Point2 sphereScreen[sphereArrayLength];
+    struct Point2 sphere2d[sphere.vertexCount];
+    struct Point2 sphereScreen[sphere.vertexCount];
 
     while (!WindowShouldClose()) {
 
         cubeCenter = GetCenter(cube);
         pyramidCenter = GetCenter(pyramid);
-        sphereCenter = GetCenter(Sphere);
+        sphereCenter = GetCenter(sphere);
 
         sock = ConnectHyprlandSocket();
         if (sock < 0) {
@@ -187,30 +165,21 @@ int main(void) {
         for (size_t i = 0; i < cube.vertexCount; i++) {
             cube.vertices[i] = Translate3(cube.vertices[i], windowDirection);
             cube.vertices[i] = RotateAboutPoint(cube.vertices[i], cubeCenter, 0.01f, 0.015, 0.0f);
-        }
-
-        for (size_t i = 0; i < pyramid.vertexCount; i++) {
-            pyramid.vertices[i] = Translate3(pyramid.vertices[i], windowDirection);
-            pyramid.vertices[i] = RotateAboutPoint(pyramid.vertices[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
-        }
-
-        for (size_t i = 0; i < Sphere.vertexCount; i++) {
-            Sphere.vertices[i] = Translate3(Sphere.vertices[i], windowDirection);
-            Sphere.vertices[i] = RotateAboutPoint(Sphere.vertices[i], sphereCenter, 0.001f, 0.02f, 0.005f);
-        }
-
-        for (size_t i = 0; i < cube.vertexCount; i++) {
             cube2d[i] = Project(cube.vertices[i]);
             cubeScreen[i] = CartesianToScreen(cube2d[i], WIDTH, HEIGHT);
         }
 
         for (size_t i = 0; i < pyramid.vertexCount; i++) {
+            pyramid.vertices[i] = Translate3(pyramid.vertices[i], windowDirection);
+            pyramid.vertices[i] = RotateAboutPoint(pyramid.vertices[i], pyramidCenter, 0.0f, -0.015f, 0.0f);
             pyramid2d[i] = Project(pyramid.vertices[i]);
             pyramidScreen[i] = CartesianToScreen(pyramid2d[i], WIDTH, HEIGHT);
         }
 
-        for (size_t i = 0; i < Sphere.vertexCount; i++) {
-            sphere2d[i] = Project(Sphere.vertices[i]);
+        for (size_t i = 0; i < sphere.vertexCount; i++) {
+            sphere.vertices[i] = Translate3(sphere.vertices[i], windowDirection);
+            sphere.vertices[i] = RotateAboutPoint(sphere.vertices[i], sphereCenter, 0.001f, 0.02f, 0.005f);
+            sphere2d[i] = Project(sphere.vertices[i]);
             sphereScreen[i] = CartesianToScreen(sphere2d[i], WIDTH, HEIGHT);
         }
 
@@ -225,7 +194,7 @@ int main(void) {
                 RED
                 );
         DrawWireframe(
-                &Sphere,
+                &sphere,
                 sphereScreen,
                 BLUE
                 );
@@ -235,6 +204,7 @@ int main(void) {
 
     freeObject3D(&cube);
     freeObject3D(&pyramid);
+    freeObject3D(&sphere);
     free(address);
     close(sock);
     CloseWindow();

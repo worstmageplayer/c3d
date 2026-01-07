@@ -1,7 +1,7 @@
 #include "sphere_data.h"
 #include "../types.h"
 
-const struct Point3 sphere_data[SPHERE_VERTEX_COUNT] = {
+const struct Point3 sphereVertex_data[SPHERE_VERTEX_COUNT] = {
     { 0.000000f,  1.000000f,  0.000000f},
     { 0.195090f,  0.980785f,  0.000000f},
     { 0.188443f,  0.980785f,  0.050493f},

@@ -1,4 +1,5 @@
 #include "transform.h"
+#include "types.h"
 #include <math.h>
 
 struct Point3 Translate3(struct Point3 point3, struct Direction direction) {

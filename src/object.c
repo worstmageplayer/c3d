@@ -75,6 +75,27 @@ struct Object3D spawnPyramid(float x, float y, float z) {
     return pyramid;
 }
 
+#include "data/sphere_data.h"
+struct Object3D spawnSphere(float x, float y, float z) {
+    struct Object3D sphere;
+    sphere.vertexCount = SPHERE_VERTEX_COUNT;
+    sphere.edgeCount = SPHERE_EDGE_COUNT;
+
+    sphere.vertices = malloc(sphere.vertexCount * sizeof(*sphere.vertices));
+    sphere.edges = malloc(sphere.edgeCount * sizeof(*sphere.edges));
+
+    memcpy(sphere.vertices, sphereVertex_data, sizeof(sphereVertex_data));
+    memcpy(sphere.edges, sphereEdges_data, sizeof(sphereEdges_data));
+
+    for (size_t i = 0; i < SPHERE_VERTEX_COUNT; i++) {
+        sphere.vertices[i].x *= x;
+        sphere.vertices[i].y *= y;
+        sphere.vertices[i].z *= z;
+    }
+
+    return sphere;
+}
+
 void freeObject3D(struct Object3D *object) {
     free(object->vertices);
     free(object->edges);

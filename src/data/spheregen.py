@@ -77,7 +77,7 @@ def print_c_code(lat_sections, lon_sections):
     print()
 
     # Print vertices
-    print(f"struct Point3 sphere[{len(vertices)}] = {{")
+    print(f"struct Point3 sphereVertex_data[{len(vertices)}] = {{")
     for i, (x, y, z) in enumerate(vertices):
         print(f"    {{{x: 9.6f}f, {y:9.6f}f, {z:9.6f}f}},")
     print("};")

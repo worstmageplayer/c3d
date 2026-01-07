@@ -18,4 +18,13 @@ struct Direction {
     float z;
 };
 
+struct Shear {
+    float xy;
+    float xz;
+    float yx;
+    float yz;
+    float zx;
+    float zy;
+};
+
 #endif
